@@ -1,8 +1,11 @@
 {
   "meta": {
-    "last_updated": "never",
+    "last_updated": "2026-06-06T14:57:37Z",
     "total_records": 0,
-    "sources": ["Senate EFTS (efts.senate.gov)", "House (disclosures.house.gov)"],
+    "sources": [
+      "Senate EFTS (efts.senate.gov)",
+      "House (disclosures.house.gov)"
+    ],
     "note": "Trade amounts are reported as ranges per STOCK Act requirements. Lag between trade date and filing date can be up to 45 days."
   },
   "amount_ranges": [
