@@ -33,7 +33,7 @@ REQUEST_DELAY = 1.0         # seconds between HTTP requests (be polite)
 HEADERS = {
     "User-Agent": (
         "CongressTradesTracker/1.0 "
-        "(public research tool; github.com/YOUR_USERNAME/congress-trades)"
+        "(public research tool; github.com/Macked-outofit/congress-trades)"
     ),
     "Accept": "application/json",
 }
