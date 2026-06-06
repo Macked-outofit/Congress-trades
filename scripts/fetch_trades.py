@@ -26,7 +26,7 @@ DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 # How many days back to look for new filings on each run
-LOOKBACK_DAYS = 14          # Monday runs catch anything filed in the past 2 wks
+LOOKBACK_DAYS = 90          # Monday runs catch anything filed in the past 3 mnts
 SENATE_PAGE_SIZE = 100
 REQUEST_DELAY = 1.0         # seconds between HTTP requests (be polite)
 
