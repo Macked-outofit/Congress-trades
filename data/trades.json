@@ -1,12 +1,11 @@
 {
   "meta": {
-    "last_updated": "2026-06-06T15:03:47Z",
+    "last_updated": "2026-06-06T15:44:16Z",
     "total_records": 0,
     "sources": [
-      "Senate EFTS (efts.senate.gov)",
-      "House (disclosures.house.gov)"
+      "Financial Modeling Prep — Senate & House congressional trades"
     ],
-    "note": "Trade amounts are reported as ranges per STOCK Act requirements. Lag between trade date and filing date can be up to 45 days."
+    "note": "Amounts reported as ranges per STOCK Act. Up to 45-day lag between trade date and filing date."
   },
   "amount_ranges": [
     "$1 - $15,000",
