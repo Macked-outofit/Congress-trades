@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capitol Trades — Congressional Stock Disclosures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & tokens ─────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0c0f;
+    --bg2:       #111418;
+    --bg3:       #181c22;
+    --border:    #252b35;
+    --border2:   #2e3645;
+    --text:      #c8d0dc;
+    --text2:     #7a8899;
+    --text3:     #4a5568;
+    --accent:    #3b82f6;
+    --accent2:   #1d4ed8;
+    --buy:       #22c55e;
+    --sell:      #ef4444;
+    --exchange:  #f59e0b;
+    --senate:    #a78bfa;
+    --house:     #38bdf8;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ─────────────────────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    background: rgba(10,12,15,0.92);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+    50%      { opacity: 0.7; box-shadow: 0 0 0 5px rgba(59,130,246,0); }
+  }
+
+  .meta-bar {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .meta-bar span { color: var(--text2); }
+
+  /* ── Layout ──────────────────────────────────────────────────────────────── */
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Controls ─────────────────────────────────────────────────────────────── */
+  .controls {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+
+  label.ctrl-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    text-transform: uppercase;
+  }
+
+  select, input[type="text"] {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+
+  select:hover, input[type="text"]:hover { border-color: var(--accent); }
+  select:focus, input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+
+  input[type="text"] { width: 200px; }
+
+  .btn {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+    align-self: flex-end;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.active { background: var(--accent2); border-color: var(--accent); color: #fff; }
+
+  .ctrl-spacer { flex: 1; }
+
+  /* ── Stats bar ───────────────────────────────────────────────────────────── */
+  .stats-bar {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .stat strong { color: var(--text); font-weight: 500; }
+  .stat.senate strong { color: var(--senate); }
+  .stat.house strong { color: var(--house); }
+  .stat.buy strong { color: var(--buy); }
+  .stat.sell strong { color: var(--sell); }
+
+  /* ── Group headings ──────────────────────────────────────────────────────── */
+  .group-header {
+    padding: 14px 0 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .group-header .group-count {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+
+  /* ── Table ───────────────────────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    background: var(--bg);
+    position: sticky;
+    top: 57px;
+  }
+
+  th:hover { color: var(--text2); }
+  th.sorted { color: var(--accent); }
+  th .sort-arrow { margin-left: 4px; opacity: 0.5; font-size: 9px; }
+  th.sorted .sort-arrow { opacity: 1; }
+
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  tr:hover td { background: var(--bg2); }
+
+  /* Column widths */
+  .col-date      { width: 96px; }
+  .col-member    { width: 180px; }
+  .col-chamber   { width: 80px; }
+  .col-party     { width: 50px; }
+  .col-state     { width: 50px; }
+  .col-type      { width: 90px; }
+  .col-ticker    { width: 80px; }
+  .col-asset     { width: auto; min-width: 140px; }
+  .col-amount    { width: 200px; }
+  .col-filed     { width: 96px; }
+
+  /* Cell styles */
+  .cell-date, .cell-filed { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+
+  .cell-member { font-weight: 500; color: #e2e8f0; }
+
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-senate { background: rgba(167,139,250,0.12); color: var(--senate); border: 1px solid rgba(167,139,250,0.25); }
+  .badge-house  { background: rgba(56,189,248,0.10); color: var(--house);  border: 1px solid rgba(56,189,248,0.22); }
+
+  .badge-D  { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+  .badge-R  { background: rgba(239,68,68,0.1); color: #f87171;  border: 1px solid rgba(239,68,68,0.2); }
+  .badge-I  { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+
+  .cell-type-buy      { color: var(--buy); font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .cell-type-sell     { color: var(--sell); font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .cell-type-exchange { color: var(--exchange); font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .cell-type-other    { color: var(--text2); font-family: var(--mono); font-size: 12px; }
+
+  .cell-ticker {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .cell-amount {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .amount-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .amount-bar {
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    opacity: 0.4;
+    min-width: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Empty / loading states ──────────────────────────────────────────────── */
+  .state-msg {
+    text-align: center;
+    padding: 60px 24px;
+    font-family: var(--mono);
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  .state-msg strong { display: block; font-size: 16px; color: var(--text2); margin-bottom: 8px; }
+
+  /* ── Pagination ──────────────────────────────────────────────────────────── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px 0 32px;
+    flex-wrap: wrap;
+  }
+
+  .page-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text2);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { background: var(--accent2); border-color: var(--accent); color: #fff; }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* ── Notice ──────────────────────────────────────────────────────────────── */
+  .notice {
+    background: rgba(59,130,246,0.06);
+    border: 1px solid rgba(59,130,246,0.18);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text2);
+    margin: 14px 0 0;
+    line-height: 1.6;
+  }
+
+  /* ── Responsive ──────────────────────────────────────────────────────────── */
+  @media (max-width: 700px) {
+    header { flex-direction: column; align-items: flex-start; }
+    .controls { gap: 8px; }
+    input[type="text"] { width: 100%; }
+    td, th { padding: 7px 8px; font-size: 12px; }
+    .col-state, .col-party, .col-filed { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    CAPITOL TRADES
+  </div>
+  <div class="meta-bar">
+    <span>Updated: <span id="last-updated">—</span></span>
+    <span>Records: <span id="total-records">—</span></span>
+    <span>Source: Senate EFTS + House Disclosures</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <label class="ctrl-label">Search</label>
+      <input type="text" id="search" placeholder="Member, ticker, asset…">
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Chamber</label>
+      <select id="filter-chamber">
+        <option value="">All chambers</option>
+        <option value="Senate">Senate</option>
+        <option value="House">House</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Party</label>
+      <select id="filter-party">
+        <option value="">All parties</option>
+        <option value="D">Democrat</option>
+        <option value="R">Republican</option>
+        <option value="I">Independent</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Type</label>
+      <select id="filter-type">
+        <option value="">All types</option>
+        <option value="Purchase">Purchase / Buy</option>
+        <option value="Sale">Sale / Sell</option>
+        <option value="Exchange">Exchange</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Min amount</label>
+      <select id="filter-amount-min">
+        <option value="">No min</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Max amount</label>
+      <select id="filter-amount-max">
+        <option value="">No max</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Group by</label>
+      <select id="group-by">
+        <option value="">None</option>
+        <option value="chamber">Chamber</option>
+        <option value="party">Party</option>
+        <option value="member">Member</option>
+        <option value="amount">Amount range</option>
+        <option value="transaction_type">Trade type</option>
+        <option value="state">State</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label class="ctrl-label">Rows/page</label>
+      <select id="page-size">
+        <option value="50">50</option>
+        <option value="100" selected>100</option>
+        <option value="250">250</option>
+        <option value="500">500</option>
+      </select>
+    </div>
+
+    <div class="ctrl-spacer"></div>
+    <button class="btn" id="reset-btn">Reset filters</button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">Showing <strong id="stat-showing">—</strong> trades</div>
+    <div class="stat senate">Senate <strong id="stat-senate">—</strong></div>
+    <div class="stat house">House <strong id="stat-house">—</strong></div>
+    <div class="stat buy">Buys <strong id="stat-buys">—</strong></div>
+    <div class="stat sell">Sells <strong id="stat-sells">—</strong></div>
+  </div>
+
+  <div class="notice">
+    ℹ Trade amounts are self-reported as ranges under the STOCK Act. There may be a lag of up to 45 days between the trade date and the filing date. This data is sourced directly from <a href="https://efts.senate.gov" style="color:var(--accent)">efts.senate.gov</a> and <a href="https://disclosures.house.gov" style="color:var(--accent)">disclosures.house.gov</a>.
+  </div>
+
+  <div id="main-content">
+    <div class="state-msg"><strong>Loading data…</strong>Fetching trades from data/trades.json</div>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let ALL_TRADES = [];
+let AMOUNT_RANGES = [];
+let AMOUNT_ORDER = {};
+let filtered = [];
+let sortCol = 'filed_date';
+let sortDir = -1;  // -1 = desc, 1 = asc
+let currentPage = 1;
+let pageSize = 100;
+let groupBy = '';
+
+// ── Fetch data ────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const resp = await fetch('data/trades.json');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+
+    ALL_TRADES = json.trades || [];
+    AMOUNT_RANGES = json.amount_ranges || [];
+    AMOUNT_ORDER = Object.fromEntries(AMOUNT_RANGES.map((r, i) => [r, i]));
+
+    document.getElementById('last-updated').textContent =
+      json.meta?.last_updated?.slice(0, 10) || '—';
+    document.getElementById('total-records').textContent =
+      ALL_TRADES.length.toLocaleString();
+
+    populateAmountFilters();
+    applyFilters();
+  } catch (e) {
+    document.getElementById('main-content').innerHTML =
+      `<div class="state-msg"><strong>Could not load data</strong>${e.message}<br><br>
+       Make sure <code>data/trades.json</code> exists in the repo root and the site
+       is served via a local server (not file://). Run the fetch script first.</div>`;
+  }
+}
+
+// ── Amount filter dropdowns ───────────────────────────────────────────────────
+function populateAmountFilters() {
+  const minSel = document.getElementById('filter-amount-min');
+  const maxSel = document.getElementById('filter-amount-max');
+  AMOUNT_RANGES.forEach((r, i) => {
+    minSel.add(new Option(r, i));
+    maxSel.add(new Option(r, i));
+  });
+}
+
+// ── Filtering ─────────────────────────────────────────────────────────────────
+function applyFilters() {
+  const search  = document.getElementById('search').value.toLowerCase();
+  const chamber = document.getElementById('filter-chamber').value;
+  const party   = document.getElementById('filter-party').value;
+  const type    = document.getElementById('filter-type').value;
+  const amtMin  = document.getElementById('filter-amount-min').value;
+  const amtMax  = document.getElementById('filter-amount-max').value;
+  groupBy       = document.getElementById('group-by').value;
+  pageSize      = parseInt(document.getElementById('page-size').value, 10);
+
+  filtered = ALL_TRADES.filter(t => {
+    if (search && !`${t.member} ${t.ticker} ${t.asset_name} ${t.state}`
+        .toLowerCase().includes(search)) return false;
+    if (chamber && t.chamber !== chamber) return false;
+    if (party   && t.party !== party)     return false;
+    if (type) {
+      const tl = (t.transaction_type || '').toLowerCase();
+      if (type === 'Purchase' && !tl.includes('purchase') && !tl.includes('buy')) return false;
+      if (type === 'Sale'     && !tl.includes('sale') && !tl.includes('sell'))    return false;
+      if (type === 'Exchange' && !tl.includes('exchange'))                         return false;
+    }
+    const amtIdx = AMOUNT_ORDER[t.amount] ?? -1;
+    if (amtMin !== '' && amtIdx < parseInt(amtMin, 10)) return false;
+    if (amtMax !== '' && amtIdx > parseInt(amtMax, 10)) return false;
+    return true;
+  });
+
+  sortFiltered();
+  currentPage = 1;
+  updateStats();
+  render();
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+function sortFiltered() {
+  filtered.sort((a, b) => {
+    let va = a[sortCol] ?? '';
+    let vb = b[sortCol] ?? '';
+    if (sortCol === 'amount') {
+      va = AMOUNT_ORDER[va] ?? -1;
+      vb = AMOUNT_ORDER[vb] ?? -1;
+      return (va - vb) * sortDir;
+    }
+    return String(va).localeCompare(String(vb)) * sortDir;
+  });
+}
+
+function setSort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  sortFiltered();
+  render();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const senateN = filtered.filter(t => t.chamber === 'Senate').length;
+  const houseN  = filtered.filter(t => t.chamber === 'House').length;
+  const buyN    = filtered.filter(t => /purchase|buy/i.test(t.transaction_type)).length;
+  const sellN   = filtered.filter(t => /sale|sell/i.test(t.transaction_type)).length;
+
+  document.getElementById('stat-showing').textContent = filtered.length.toLocaleString();
+  document.getElementById('stat-senate').textContent  = senateN.toLocaleString();
+  document.getElementById('stat-house').textContent   = houseN.toLocaleString();
+  document.getElementById('stat-buys').textContent    = buyN.toLocaleString();
+  document.getElementById('stat-sells').textContent   = sellN.toLocaleString();
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('main-content');
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="state-msg"><strong>No trades found</strong>Try adjusting your filters.</div>`;
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  if (groupBy) {
+    renderGrouped(el);
+    document.getElementById('pagination').innerHTML = '';
+  } else {
+    renderPaged(el);
+  }
+}
+
+function renderGrouped(el) {
+  // Group the full filtered set (no pagination in grouped mode)
+  const groups = {};
+  filtered.forEach(t => {
+    const key = t[groupBy] || '(unknown)';
+    (groups[key] = groups[key] || []).push(t);
+  });
+
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    if (groupBy === 'amount') {
+      return (AMOUNT_ORDER[a] ?? 99) - (AMOUNT_ORDER[b] ?? 99);
+    }
+    return a.localeCompare(b);
+  });
+
+  let html = '';
+  sortedKeys.forEach(key => {
+    const rows = groups[key];
+    html += `<div class="group-header">
+      ${escHtml(key)}
+      <span class="group-count">${rows.length}</span>
+    </div>`;
+    html += tableHTML(rows);
+  });
+
+  el.innerHTML = `<div class="table-wrap">${html}</div>`;
+  attachSortHandlers();
+}
+
+function renderPaged(el) {
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const start = (currentPage - 1) * pageSize;
+  const slice = filtered.slice(start, start + pageSize);
+
+  el.innerHTML = `<div class="table-wrap">${tableHTML(slice)}</div>`;
+  attachSortHandlers();
+  renderPagination(totalPages);
+}
+
+function tableHTML(rows) {
+  const arrow = col => col === sortCol
+    ? (sortDir === -1 ? '↓' : '↑')
+    : '↕';
+
+  const thead = `<thead><tr>
+    <th class="col-date ${sortCol==='trade_date'?'sorted':''}" data-col="trade_date">Trade date<span class="sort-arrow">${arrow('trade_date')}</span></th>
+    <th class="col-member ${sortCol==='member'?'sorted':''}" data-col="member">Member<span class="sort-arrow">${arrow('member')}</span></th>
+    <th class="col-chamber ${sortCol==='chamber'?'sorted':''}" data-col="chamber">Chamber<span class="sort-arrow">${arrow('chamber')}</span></th>
+    <th class="col-party ${sortCol==='party'?'sorted':''}" data-col="party">Pty<span class="sort-arrow">${arrow('party')}</span></th>
+    <th class="col-state ${sortCol==='state'?'sorted':''}" data-col="state">St<span class="sort-arrow">${arrow('state')}</span></th>
+    <th class="col-type ${sortCol==='transaction_type'?'sorted':''}" data-col="transaction_type">Type<span class="sort-arrow">${arrow('transaction_type')}</span></th>
+    <th class="col-ticker ${sortCol==='ticker'?'sorted':''}" data-col="ticker">Ticker<span class="sort-arrow">${arrow('ticker')}</span></th>
+    <th class="col-asset ${sortCol==='asset_name'?'sorted':''}" data-col="asset_name">Asset<span class="sort-arrow">${arrow('asset_name')}</span></th>
+    <th class="col-amount ${sortCol==='amount'?'sorted':''}" data-col="amount">Amount range<span class="sort-arrow">${arrow('amount')}</span></th>
+    <th class="col-filed ${sortCol==='filed_date'?'sorted':''}" data-col="filed_date">Filed<span class="sort-arrow">${arrow('filed_date')}</span></th>
+  </tr></thead>`;
+
+  const tbody = rows.map(t => {
+    const typeClass = typeStyle(t.transaction_type);
+    const typeLabel = normaliseType(t.transaction_type);
+    const amtIdx    = AMOUNT_ORDER[t.amount] ?? 0;
+    const barWidth  = Math.max(4, Math.round((amtIdx / (AMOUNT_RANGES.length - 1)) * 80));
+
+    return `<tr>
+      <td class="cell-date col-date">${fmtDate(t.trade_date)}</td>
+      <td class="cell-member col-member" title="${escHtml(t.member)}">${escHtml(t.member)}</td>
+      <td class="col-chamber"><span class="badge badge-${t.chamber==='Senate'?'senate':'house'}">${t.chamber==='Senate'?'SEN':'REP'}</span></td>
+      <td class="col-party"><span class="badge badge-${escHtml(t.party)}">${escHtml(t.party)||'—'}</span></td>
+      <td class="col-state">${escHtml(t.state)||'—'}</td>
+      <td class="${typeClass} col-type">${typeLabel}</td>
+      <td class="cell-ticker col-ticker">${escHtml(t.ticker)||'—'}</td>
+      <td class="col-asset" title="${escHtml(t.asset_name)}">${escHtml(t.asset_name)||'—'}</td>
+      <td class="cell-amount col-amount">
+        <div class="amount-bar-wrap">
+          <div class="amount-bar" style="width:${barWidth}px"></div>
+          ${escHtml(t.amount)||'—'}
+        </div>
+      </td>
+      <td class="cell-filed col-filed">${fmtDate(t.filed_date)}</td>
+    </tr>`;
+  }).join('');
+
+  return `<table>${thead}<tbody>${tbody}</tbody></table>`;
+}
+
+function renderPagination(total) {
+  const pg = document.getElementById('pagination');
+  if (total <= 1) { pg.innerHTML = ''; return; }
+
+  const window_size = 5;
+  let start = Math.max(1, currentPage - 2);
+  let end   = Math.min(total, start + window_size - 1);
+  if (end - start < window_size - 1) start = Math.max(1, end - window_size + 1);
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+  if (start > 1) html += `<button class="page-btn" onclick="goPage(1)">1</button><span style="color:var(--text3);font-family:var(--mono)">…</span>`;
+  for (let p = start; p <= end; p++) {
+    html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  if (end < total) html += `<span style="color:var(--text3);font-family:var(--mono)">…</span><button class="page-btn" onclick="goPage(${total})">${total}</button>`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>Next ›</button>`;
+  pg.innerHTML = html;
+}
+
+function goPage(p) {
+  currentPage = p;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Sort handler attachment ───────────────────────────────────────────────────
+function attachSortHandlers() {
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    th.onclick = () => setSort(th.dataset.col);
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  // Normalise MM/DD/YYYY and YYYY-MM-DD to a short display
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/) || s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return s.slice(0, 10);
+  if (s.includes('-')) return `${m[2]}/${m[3]}/${m[1].slice(2)}`;
+  return `${m[1]}/${m[2]}/${m[3].slice(2)}`;
+}
+
+function typeStyle(type) {
+  const t = (type || '').toLowerCase();
+  if (t.includes('purchase') || t.includes('buy')) return 'cell-type-buy';
+  if (t.includes('sale')     || t.includes('sell')) return 'cell-type-sell';
+  if (t.includes('exchange')) return 'cell-type-exchange';
+  return 'cell-type-other';
+}
+
+function normaliseType(type) {
+  const t = (type || '').toLowerCase();
+  if (t.includes('purchase') || t.includes('buy')) return 'BUY';
+  if (t.includes('full sale') || t.includes('full sell')) return 'SELL (F)';
+  if (t.includes('sale') || t.includes('sell')) return 'SELL';
+  if (t.includes('exchange')) return 'EXCHANGE';
+  return type || '—';
+}
+
+// ── Wire up controls ──────────────────────────────────────────────────────────
+['search','filter-chamber','filter-party','filter-type',
+ 'filter-amount-min','filter-amount-max','group-by','page-size'
+].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener(id === 'search' ? 'input' : 'change', applyFilters);
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('search').value = '';
+  document.getElementById('filter-chamber').value = '';
+  document.getElementById('filter-party').value = '';
+  document.getElementById('filter-type').value = '';
+  document.getElementById('filter-amount-min').value = '';
+  document.getElementById('filter-amount-max').value = '';
+  document.getElementById('group-by').value = '';
+  document.getElementById('page-size').value = '100';
+  applyFilters();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
